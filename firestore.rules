@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() { return request.auth != null; }
+    function existing() { return resource.data; }
+    function incoming() { return request.resource.data; }
+
+    function isValidBooking(data) {
+      return data.keys().hasAll(['roomId', 'date', 'startTime', 'endTime', 'title', 'userName']) &&
+             data.roomId is string && data.roomId.size() > 0 && data.roomId.size() <= 100 &&
+             data.date is string && data.date.size() > 0 && data.date.size() <= 20 &&
+             data.startTime is string && data.startTime.size() > 0 && data.startTime.size() <= 20 &&
+             data.endTime is string && data.endTime.size() > 0 && data.endTime.size() <= 20 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.userName is string && data.userName.size() > 0 && data.userName.size() <= 100 &&
+             (data.keys().hasAll(['remarks']) ? (data.remarks is string && data.remarks.size() <= 1000) : true) &&
+             (data.keys().hasAll(['userId']) ? (data.userId is string && data.userId.size() <= 100) : true) &&
+             (data.keys().hasAll(['createdAt']) ? data.createdAt is number : true);
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if true; // Public read so anyone can see the schedule
+      
+      // Allow any user to create a booking. Optional: require auth
+      allow create: if isValidBooking(incoming());
+      
+      // Allow user to delete their own booking if userId matches, or no userId check currently if no auth
+      allow delete: if true;
+    }
+  }
+}

@@ -11,6 +11,8 @@ import MonthCalendarGrid from './components/MonthCalendarGrid';
 import WeekCalendarGrid from './components/WeekCalendarGrid';
 import RoomManagerModal from './components/RoomManagerModal';
 import { useHolidays } from './hooks/useHolidays';
+import { db } from './firebase';
+import { collection, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 // Initial dummy data
 const DUMMY_BOOKINGS: Booking[] = [
@@ -50,11 +52,22 @@ export default function App() {
     return ROOMS.map(r => r.id);
   });
   
-  const [bookings, setBookings] = useState<Booking[]>(() => {
-    const saved = localStorage.getItem('bookings');
-    if (saved) return JSON.parse(saved);
-    return DUMMY_BOOKINGS;
-  });
+  const [bookings, setBookings] = useState<Booking[]>([]);
+
+  useEffect(() => {
+    // Real-time synchronization with Firestore
+    const unsubscribe = onSnapshot(collection(db, 'bookings'), (snapshot) => {
+      const bookingsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Booking[];
+      setBookings(bookingsData);
+    }, (error) => {
+      console.error('Firestore Error: ', error);
+    });
+
+    return () => unsubscribe();
+  }, []);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRoomManagerOpen, setIsRoomManagerOpen] = useState(false);
@@ -92,9 +105,9 @@ export default function App() {
     }
 
     if (editingBooking) {
-      setBookings(bookings.map(b => b.id === editingBooking.id ? newBooking : b));
+      setDoc(doc(db, 'bookings', editingBooking.id), newBooking).catch(console.error);
     } else {
-      setBookings([...bookings, newBooking]);
+      setDoc(doc(db, 'bookings', newBooking.id), newBooking).catch(console.error);
     }
     
     setIsModalOpen(false);
@@ -103,7 +116,7 @@ export default function App() {
   };
 
   const handleDeleteBooking = (bookingId: string) => {
-    setBookings(bookings.filter(b => b.id !== bookingId));
+    deleteDoc(doc(db, 'bookings', bookingId)).catch(console.error);
     setSelectedBookingForDetails(null);
   };
 

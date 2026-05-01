@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "booking": {
+      "title": "Booking",
+      "description": "Room booking for the community living room",
+      "type": "object",
+      "properties": {
+        "roomId": {
+          "type": "string",
+          "description": "The ID of the booked room"
+        },
+        "date": {
+          "type": "string",
+          "description": "The date of the booking (e.g. 2026-05-01)"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "The start time of the booking (e.g. 10:00)"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "The end time of the booking (e.g. 12:00)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Meeting title"
+        },
+        "userName": {
+          "type": "string",
+          "description": "Name of the person booking"
+        },
+        "remarks": {
+          "type": "string",
+          "description": "Additional remarks"
+        },
+        "userId": {
+          "type": "string",
+          "description": "The user ID of the creator"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Timestamp when booking was created"
+        }
+      },
+      "required": ["roomId", "date", "startTime", "endTime", "title", "userName"]
+    }
+  },
+  "firestore": {
+    "/bookings/{bookingId}": {
+      "schema": {
+        "$ref": "#/entities/booking"
+      },
+      "description": "Stores all bookings for the rooms"
+    }
+  }
+}
