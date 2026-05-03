@@ -14,48 +14,50 @@ import { useHolidays } from './hooks/useHolidays';
 import { db } from './firebase';
 import { collection, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
 
-// Initial dummy data
-const DUMMY_BOOKINGS: Booking[] = [
-  {
-    id: '1',
-    roomId: 'room-a',
-    userName: '張先生 (Mr. Chang)',
-    title: '專案月會 (Monthly Sync)',
-    date: format(new Date(), 'yyyy-MM-dd'),
-    startTime: '10:00',
-    endTime: '11:30',
-  },
-  {
-    id: '2',
-    roomId: 'activity-hall',
-    userName: '林經理 (Manager Lin)',
-    title: '員工培訓 (Staff Training)',
-    date: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
-    startTime: '14:00',
-    endTime: '17:00',
-  }
-];
+// No initial dummy data since we are connected to Firebase.
 
 export default function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const { holidays } = useHolidays(currentDate.getFullYear());
   
-  const [rooms, setRooms] = useState<Room[]>(() => {
-    const saved = localStorage.getItem('app_rooms');
-    if (saved) return JSON.parse(saved);
-    return ROOMS;
-  });
+  const [rooms, setRooms] = useState<Room[]>(ROOMS);
+  const [roomsLoaded, setRoomsLoaded] = useState(false);
   
-  const [selectedRooms, setSelectedRooms] = useState<string[]>(() => {
-    const saved = localStorage.getItem('app_selected_rooms');
-    if (saved) return JSON.parse(saved);
-    return ROOMS.map(r => r.id);
-  });
+  const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   
   const [bookings, setBookings] = useState<Booking[]>([]);
 
+  // Seed rooms to Firestore if none exist.
   useEffect(() => {
-    // Real-time synchronization with Firestore
+    if (roomsLoaded && rooms.length === 0) {
+      ROOMS.forEach(room => {
+        setDoc(doc(db, 'rooms', room.id), room).catch(console.error);
+      });
+    }
+  }, [roomsLoaded, rooms.length]);
+
+  useEffect(() => {
+    // Real-time synchronization for rooms
+    const unsubscribeRooms = onSnapshot(collection(db, 'rooms'), (snapshot) => {
+      const roomsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Room[];
+      setRooms(roomsData);
+      setRoomsLoaded(true);
+
+      // Keep selectedRooms valid based on available rooms
+      setSelectedRooms(prev => {
+        if (prev.length === 0 && roomsData.length > 0) return roomsData.map(r => r.id);
+        const activeIds = roomsData.map(r => r.id);
+        const filtered = prev.filter(id => activeIds.includes(id));
+        return filtered.length > 0 ? filtered : activeIds;
+      });
+    }, (error) => {
+      console.error('Firestore Error sync rooms: ', error);
+    });
+
+    // Real-time synchronization for bookings
     const unsubscribe = onSnapshot(collection(db, 'bookings'), (snapshot) => {
       const bookingsData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -129,8 +131,24 @@ export default function App() {
   };
 
   const handleUpdateRooms = (updatedRooms: Room[]) => {
-    setRooms(updatedRooms);
-    // Auto-select new rooms and unselect removed rooms
+    // Determine which rooms were added/updated and which were deleted
+    const currentRoomIds = rooms.map(r => r.id);
+    const updatedRoomIds = updatedRooms.map(r => r.id);
+
+    const roomsToDelete = currentRoomIds.filter(id => !updatedRoomIds.includes(id));
+    
+    // Delete removed rooms from Firestore
+    roomsToDelete.forEach(id => {
+      deleteDoc(doc(db, 'rooms', id)).catch(console.error);
+    });
+
+    // Add or Update rooms in Firestore
+    updatedRooms.forEach(room => {
+      setDoc(doc(db, 'rooms', room.id), room).catch(console.error);
+    });
+
+    // Note: State will be updated automatically via the onSnapshot listener, 
+    // but we can still calculate activeIds for the selectedRooms.
     const activeIds = updatedRooms.map(r => r.id);
     setSelectedRooms(prev => {
       const filtered = prev.filter(id => activeIds.includes(id));

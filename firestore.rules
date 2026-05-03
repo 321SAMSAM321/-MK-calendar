@@ -24,6 +24,18 @@ service cloud.firestore {
              (data.keys().hasAll(['createdAt']) ? data.createdAt is number : true);
     }
 
+    function isValidRoom(data) {
+      return data.keys().hasAll(['name', 'color']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.color is string && data.color.size() > 0 && data.color.size() <= 100;
+    }
+
+    match /rooms/{roomId} {
+      allow read: if true;
+      allow create, update: if isValidRoom(incoming());
+      allow delete: if true;
+    }
+
     match /bookings/{bookingId} {
       allow read: if true; // Public read so anyone can see the schedule
       

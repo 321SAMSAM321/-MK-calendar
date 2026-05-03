@@ -1,5 +1,21 @@
 {
   "entities": {
+    "room": {
+      "title": "Room",
+      "description": "Room definition",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Room name"
+        },
+        "color": {
+          "type": "string",
+          "description": "Room color classes"
+        }
+      },
+      "required": ["name", "color"]
+    },
     "booking": {
       "title": "Booking",
       "description": "Room booking for the community living room",
@@ -46,6 +62,12 @@
     }
   },
   "firestore": {
+    "/rooms/{roomId}": {
+      "schema": {
+        "$ref": "#/entities/room"
+      },
+      "description": "Stores all available rooms"
+    },
     "/bookings/{bookingId}": {
       "schema": {
         "$ref": "#/entities/booking"
