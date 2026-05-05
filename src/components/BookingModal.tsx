@@ -28,28 +28,30 @@ export default function BookingModal({ isOpen, initialDate, initialTime, initial
   });
   
   useEffect(() => {
-    if (editingBooking) {
-      setFormData({
-        roomId: editingBooking.roomId,
-        userName: editingBooking.userName,
-        title: editingBooking.title,
-        date: editingBooking.date,
-        startTime: editingBooking.startTime,
-        endTime: editingBooking.endTime,
-        remarks: editingBooking.remarks || ''
-      });
-    } else {
-      setFormData({
-        roomId: initialRoomId || (rooms.length > 0 ? rooms[0].id : ''),
-        userName: '',
-        title: '',
-        date: initialDate || format(new Date(), 'yyyy-MM-dd'),
-        startTime: initialTime || '09:00',
-        endTime: initialTime ? TIME_SLOTS[Math.min(TIME_SLOTS.indexOf(initialTime) + 2, TIME_SLOTS.length - 1)] : '10:00',
-        remarks: ''
-      });
+    if (isOpen) {
+      if (editingBooking) {
+        setFormData({
+          roomId: editingBooking.roomId,
+          userName: editingBooking.userName,
+          title: editingBooking.title,
+          date: editingBooking.date,
+          startTime: editingBooking.startTime,
+          endTime: editingBooking.endTime,
+          remarks: editingBooking.remarks || ''
+        });
+      } else {
+        setFormData({
+          roomId: initialRoomId || (rooms.length > 0 ? rooms[0].id : ''),
+          userName: '',
+          title: '',
+          date: initialDate || format(new Date(), 'yyyy-MM-dd'),
+          startTime: initialTime || '09:00',
+          endTime: initialTime ? TIME_SLOTS[Math.min(TIME_SLOTS.indexOf(initialTime) + 2, TIME_SLOTS.length - 1)] : '10:00',
+          remarks: ''
+        });
+      }
     }
-  }, [editingBooking, initialDate, initialTime, initialRoomId, rooms, isOpen]);
+  }, [isOpen]); // Only reset form data when the modal is opened
 
   const startIndex = TIME_SLOTS.indexOf(formData.startTime);
   const endIndex = TIME_SLOTS.indexOf(formData.endTime);

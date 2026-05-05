@@ -39,8 +39,8 @@ service cloud.firestore {
     match /bookings/{bookingId} {
       allow read: if true; // Public read so anyone can see the schedule
       
-      // Allow any user to create a booking. Optional: require auth
-      allow create: if isValidBooking(incoming());
+      // Allow any user to create or update a booking. Optional: require auth
+      allow create, update: if isValidBooking(incoming());
       
       // Allow user to delete their own booking if userId matches, or no userId check currently if no auth
       allow delete: if true;
