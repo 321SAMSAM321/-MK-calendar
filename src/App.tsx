@@ -78,6 +78,9 @@ export default function App() {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<{date: string, time: string, roomId?: string} | null>(null);
   const [selectedBookingForDetails, setSelectedBookingForDetails] = useState<Booking | null>(null);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  const todayBookings = bookings.filter(b => b.date === format(new Date(), 'yyyy-MM-dd')).sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   useEffect(() => {
     localStorage.setItem('bookings', JSON.stringify(bookings));
@@ -198,7 +201,7 @@ export default function App() {
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-sky-100/40 rounded-full blur-3xl -z-10 translate-y-1/3 -translate-x-1/4"></div>
 
         {/* Header */}
-        <header className="h-20 bg-white/60 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-4 md:px-8 shrink-0">
+        <header className="h-20 bg-white/60 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-4 md:px-8 shrink-0 relative z-30">
           <div className="flex items-center gap-3 md:gap-4">
             <button 
               className="md:hidden p-2 text-slate-500 hover:text-slate-700 bg-white/80 rounded-xl shadow-sm border border-slate-200"
@@ -251,10 +254,73 @@ export default function App() {
                    週 (Week)
                 </button>
              </div>
-             <button className="p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors relative">
-                <Bell size={22} strokeWidth={2.0} />
-                <span className="absolute top-2.5 right-3 w-2 h-2 bg-indigo-500 rounded-full border-2 border-white"></span>
-             </button>
+             <div className="relative">
+               <button 
+                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                 className="p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors relative"
+               >
+                  <Bell size={22} strokeWidth={2.0} />
+                  {todayBookings.length > 0 && (
+                    <span className="absolute top-2.5 right-3 w-2.5 h-2.5 bg-indigo-500 rounded-full border-2 border-white"></span>
+                  )}
+               </button>
+               
+               {isNotificationsOpen && (
+                 <>
+                   <div 
+                     className="fixed inset-0 z-40" 
+                     onClick={() => setIsNotificationsOpen(false)}
+                   />
+                   <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                     <div className="p-4 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
+                       <h3 className="font-bold text-slate-800">今日活動 (Today's Events)</h3>
+                       <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{todayBookings.length}</span>
+                     </div>
+                     <div className="max-h-[60vh] overflow-y-auto">
+                       {todayBookings.length > 0 ? (
+                         <div className="divide-y divide-slate-50">
+                           {todayBookings.map(booking => {
+                             const room = rooms.find(r => r.id === booking.roomId);
+                             return (
+                               <div 
+                                 key={booking.id} 
+                                 className="p-4 hover:bg-slate-50 transition-colors cursor-pointer"
+                                 onClick={() => {
+                                   setSelectedBookingForDetails(booking);
+                                   setIsNotificationsOpen(false);
+                                 }}
+                               >
+                                 <div className="flex justify-between items-start mb-1">
+                                   <h4 className="font-bold text-slate-800 truncate pr-2">{booking.title}</h4>
+                                   <span className="text-xs font-bold text-slate-500 shrink-0">{booking.startTime}</span>
+                                 </div>
+                                 <div className="flex items-center text-xs text-slate-500 gap-3">
+                                   <div className="flex items-center gap-1">
+                                     <MapPin size={12} className="text-slate-400" />
+                                     <span className="truncate max-w-[100px]">{room?.name || '未知空間'}</span>
+                                   </div>
+                                   <div className="flex items-center gap-1 min-w-0">
+                                     <Users size={12} className="text-slate-400" />
+                                     <span className="truncate">{booking.userName}</span>
+                                   </div>
+                                 </div>
+                               </div>
+                             );
+                           })}
+                         </div>
+                       ) : (
+                         <div className="p-8 text-center text-slate-500 text-sm flex flex-col items-center">
+                           <Clock size={24} className="mb-2 text-slate-300" />
+                           今日沒有已預約的活動
+                           <br/>
+                           (No events today)
+                         </div>
+                       )}
+                     </div>
+                   </div>
+                 </>
+               )}
+             </div>
              <div className="w-10 h-10 bg-indigo-100 border-2 border-white shadow-sm rounded-full text-indigo-700 flex items-center justify-center font-bold text-base">
                 U
              </div>
