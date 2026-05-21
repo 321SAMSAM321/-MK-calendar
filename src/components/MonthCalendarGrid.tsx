@@ -41,8 +41,8 @@ export default function MonthCalendarGrid({ currentDate, bookings, rooms, holida
       </div>
       {/* Grid */}
       <div 
-        className="grid grid-cols-7 flex-1 gap-2 p-2 bg-slate-50/50"
-        style={{ gridTemplateRows: `repeat(${days.length / 7}, minmax(0, 1fr))` }}
+        className="grid grid-cols-7 flex-1 gap-2 p-2 bg-slate-50/50 overflow-y-auto min-h-0 month-calendar-scrollbar"
+        style={{ gridTemplateRows: `repeat(${days.length / 7}, minmax(140px, 1fr))` }}
       >
         {days.map(day => {
            const dayStr = format(day, 'yyyy-MM-dd');

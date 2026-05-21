@@ -68,7 +68,10 @@ export default function App() {
       console.error('Firestore Error: ', error);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeRooms();
+      unsubscribe();
+    };
   }, []);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
